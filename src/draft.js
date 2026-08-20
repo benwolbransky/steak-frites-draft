@@ -173,24 +173,36 @@
 
     // Keepers: assign to rosters and reserve their round pick.
     const keeperByPick = {};       // overall -> keeper player
+    const missingKeepers = [];
     (opts.keepers || []).forEach((k) => {
       const pl = players.find((p) => p.name === k.name);
-      if (!pl) return;
+      if (!pl) { missingKeepers.push(k.name); return; }
       const team = teams[k.teamIdx];
-      if (!team || !addToRoster(team.roster, pl)) return;
+      if (!team) return;
+      // Reserve a DISTINCT pick for this team: the requested round if free, else the
+      // nearest free round (so two keepers on the same round don't collide).
+      const free = order.filter((o) => o.teamIdx === k.teamIdx && !keeperByPick[o.overall]);
+      if (!free.length) { missingKeepers.push(k.name + " (no pick left)"); return; }
+      let slot = free.find((o) => o.round === k.round);
+      if (!slot) slot = free.slice().sort((a, b) =>
+        Math.abs(a.round - k.round) - Math.abs(b.round - k.round) || a.round - b.round)[0];
+      if (!addToRoster(team.roster, pl)) return;
       drafted.add(pl.name);
-      const slot = order.find((o) => o.teamIdx === k.teamIdx && o.round === k.round);
-      if (slot) keeperByPick[slot.overall] = pl;
+      keeperByPick[slot.overall] = pl;
     });
 
     const state = {
-      config: CONFIG, teams, order, picks,
+      config: CONFIG, teams, order, picks, missingKeepers, keeperByPick,
       cursor: 0,                   // index into order
       available() { return players.filter((p) => !drafted.has(p.name)); },
       isComplete() { return this.cursor >= order.length; },
       currentPickInfo() { return order[this.cursor] || null; },
       currentTeam() { const o = order[this.cursor]; return o ? teams[o.teamIdx] : null; },
-      isUserOnClock() { const t = this.currentTeam(); return !!(t && t.isUser); },
+      isUserOnClock() {
+        const o = order[this.cursor];
+        if (!o || keeperByPick[o.overall]) return false;   // keeper picks auto-resolve
+        return !!teams[o.teamIdx].isUser;
+      },
     };
 
     function record(player, isKeeper) {

@@ -48,7 +48,16 @@ K/DST come off the board late, the way real drafts go.
 
 Add a keeper on the setup screen: pick the player, the team, and the **round** it costs.
 The keeper is locked onto that team and consumes its pick in that round (so the team
-makes one fewer live pick). Leave it empty for a straight draft.
+makes one fewer live pick). If a team keeps two players on the same round, the second
+bumps to the nearest free round. Leave it empty for a straight draft.
+
+### League defaults
+
+`data/league.js` pre-fills the setup screen with this league's **draft order**, **keepers**,
+and which slot is you (`Ben W`). Everything is still editable before you start — the config
+is just the starting point. Edit that file to change the defaults permanently (see the
+comments in it for the format); delete it and the app falls back to generic Team 1–10.
+Draft *strategies* aren't set there — pick them per team on the setup screen.
 
 ## Updating ADP
 
@@ -69,6 +78,7 @@ the draft order and the AI both read `adp`. No API key is required.
 ```
 index.html            app shell (loads the scripts + styles)
 data/players.js        ADP-ranked player pool (window.PLAYERS) — generated from live ESPN ADP
+data/league.js         league defaults: draft order + keepers + your team (pre-fills setup)
 src/draft.js           draft engine: snake order, keepers, roster rules, AI strategies (pure logic)
 src/styles.css         theme + layout
 src/app.js             UI controller: setup, draft loop, results

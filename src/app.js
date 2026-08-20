@@ -7,14 +7,19 @@
   const $ = (id) => document.getElementById(id);
   const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
 
-  // ---- setup state --------------------------------------------------------
+  // ---- setup state (pre-filled from data/league.js when present) ----------
   const stratKeys = Object.keys(STRATEGIES);
+  const LC = window.LEAGUE_CONFIG || {};
   const setup = {
     teams: Array.from({ length: CONFIG.numTeams }, (_, i) => ({
-      name: `Team ${i + 1}`, strategy: stratKeys[i % stratKeys.length], isUser: i === 0,
+      name: (LC.teams && LC.teams[i]) || `Team ${i + 1}`,
+      strategy: stratKeys[i % stratKeys.length],
+      isUser: false,
     })),
-    keepers: [],
+    keepers: (LC.keepers || []).map((k) => ({ name: k.name, teamIdx: k.teamIdx, round: k.round })),
   };
+  const uIdx = LC.userTeam ? setup.teams.findIndex((t) => t.name === LC.userTeam) : 0;
+  setup.teams[uIdx >= 0 ? uIdx : 0].isUser = true;
 
   // ---- draft runtime ------------------------------------------------------
   let draft = null, running = false, userAuto = false, timer = null;
