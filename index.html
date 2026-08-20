@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Steak Frites — Mock Draft</title>
+  <link rel="stylesheet" href="src/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="steak">🥩</span> Steak Frites <span class="sub">Mock Draft</span></div>
+    <div class="league-meta">10 teams · ½-PPR · snake w/ keepers · QB·2RB·2WR·2FLEX·TE·K·DST + 6 bench</div>
+  </header>
+
+  <!-- ===== SETUP ===== -->
+  <main id="setup" class="screen">
+    <div class="setup-grid">
+      <section class="card">
+        <h2>Teams &amp; strategies</h2>
+        <p class="hint">Pick which team is <b>you</b>, and give every team a draft personality.
+          The AI teams draft to ESPN-style ADP, bent by their strategy.</p>
+        <div id="team-rows" class="team-rows"></div>
+      </section>
+
+      <section class="card">
+        <h2>Keepers <span class="opt">(optional)</span></h2>
+        <p class="hint">A keeper is locked to a team and uses that team's pick in the round you set.</p>
+        <div class="keeper-form">
+          <input id="keeper-search" type="text" placeholder="Search player…" autocomplete="off" />
+          <div id="keeper-suggest" class="suggest"></div>
+          <div class="keeper-controls">
+            <select id="keeper-team"></select>
+            <label>Round <input id="keeper-round" type="number" min="1" max="16" value="1" /></label>
+            <button id="keeper-add" class="btn ghost" disabled>Add keeper</button>
+          </div>
+        </div>
+        <ul id="keeper-list" class="keeper-list"></ul>
+
+        <div class="start-row">
+          <button id="start-btn" class="btn primary">Start draft →</button>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- ===== DRAFT ===== -->
+  <main id="draft" class="screen hidden">
+    <div class="clockbar">
+      <div class="clock-left">
+        <div class="pick-num" id="pick-num">Pick 1.01</div>
+        <div class="on-clock" id="on-clock">On the clock…</div>
+      </div>
+      <div class="controls">
+        <button id="sim-pick" class="btn ghost">Sim to my pick</button>
+        <button id="autopick" class="btn ghost">Auto-pick me</button>
+        <button id="sim-all" class="btn ghost">Auto-draft all</button>
+        <label class="speed">Speed
+          <select id="speed"><option value="450">Slow</option><option value="180" selected>Normal</option><option value="40">Fast</option></select>
+        </label>
+        <button id="reset" class="btn danger">Reset</button>
+      </div>
+    </div>
+
+    <div class="draft-grid">
+      <section class="card players">
+        <div class="players-head">
+          <h3>Available</h3>
+          <div class="pos-filters" id="pos-filters"></div>
+          <input id="player-search" type="text" placeholder="Search…" autocomplete="off" />
+        </div>
+        <div id="player-list" class="player-list"></div>
+      </section>
+
+      <section class="card roster">
+        <h3 id="roster-title">Your roster</h3>
+        <div id="roster-slots" class="roster-slots"></div>
+      </section>
+
+      <section class="card log">
+        <h3>Draft board</h3>
+        <div id="pick-log" class="pick-log"></div>
+      </section>
+    </div>
+  </main>
+
+  <!-- ===== RESULTS ===== -->
+  <main id="results" class="screen hidden">
+    <div class="results-head">
+      <h2>Draft complete</h2>
+      <div>
+        <button id="results-back" class="btn ghost">Back to board</button>
+        <button id="results-reset" class="btn primary">New mock</button>
+      </div>
+    </div>
+    <div id="results-grid" class="results-grid"></div>
+  </main>
+
+  <script src="data/players.js"></script>
+  <script src="src/draft.js"></script>
+  <script src="src/app.js"></script>
+</body>
+</html>
