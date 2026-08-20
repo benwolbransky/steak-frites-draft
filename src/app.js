@@ -3,6 +3,7 @@
   "use strict";
   const { CONFIG, STRATEGIES, createDraft, canRoster } = window.SteakDraft;
   const PLAYERS = window.PLAYERS;
+  const BOARD = window.SteakBoard;
   const POS = ["QB", "RB", "WR", "TE", "K", "DST"];
   const $ = (id) => document.getElementById(id);
   const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
@@ -37,6 +38,127 @@
 
   function initTabs() {
     document.querySelectorAll("#tabbar .tab").forEach((b) => { b.onclick = () => setTab(b.dataset.tab); });
+  }
+
+  // ================= YOUR BOARD (custom rankings) =================
+  // Reordering rewrites each player's effective adp (see src/rankings.js), and the
+  // AI drafts off adp — so moving someone up genuinely makes the league reach for them.
+  let rankFilterPos = "ALL", rankSearch = "", sheetName = null;
+
+  function deltaChip(name) {
+    if (!BOARD.isMoved(name)) return "";      // ignore the one-spot drift from other moves
+    const d = BOARD.delta(name);
+    if (!d) return "";
+    const up = d > 0;
+    return `<span class="dchip ${up ? "up" : "down"}">${up ? "▲" : "▼"}${Math.abs(d)}</span>`;
+  }
+
+  function renderBoardStatus() {
+    const n = BOARD.movedCount();
+    $("board-status").innerHTML = n
+      ? `<b>${n}</b> player${n === 1 ? "" : "s"} moved off ESPN ADP.`
+      : "Straight ESPN ADP — nothing moved yet.";
+  }
+
+  function showRankings() {
+    $("setup").classList.add("hidden");
+    $("rankings").classList.remove("hidden");
+    buildRankFilters();
+    renderRankList();
+  }
+
+  function hideRankings() {
+    closeSheet();
+    $("rankings").classList.add("hidden");
+    $("setup").classList.remove("hidden");
+    renderBoardStatus();
+  }
+
+  function buildRankFilters() {
+    const box = $("rank-filters"); box.innerHTML = "";
+    ["ALL", ...POS].forEach((p) => {
+      const b = el("button", p === rankFilterPos ? "active" : "", p);
+      b.onclick = () => { rankFilterPos = p; buildRankFilters(); renderRankList(); };
+      box.appendChild(b);
+    });
+    $("rank-search").oninput = (e) => { rankSearch = e.target.value.toLowerCase(); renderRankList(); };
+  }
+
+  function renderRankList() {
+    const list = $("rank-list"); list.innerHTML = "";
+    let rows = BOARD.ordered();
+    if (rankFilterPos !== "ALL") rows = rows.filter((p) => p.pos === rankFilterPos);
+    if (rankSearch) rows = rows.filter((p) => p.name.toLowerCase().includes(rankSearch));
+    rows.slice(0, 250).forEach((p) => {
+      const row = el("div", "prow draftable" + (p.name === sheetName ? " editing" : ""));
+      row.innerHTML = `<span class="rank">${BOARD.rankOf(p.name)}</span>
+        <span class="pmain"><span class="badge b-${p.pos}">${p.pos}</span>
+        <span class="pname">${p.name}</span><span class="pteam">${p.team}</span>${deltaChip(p.name)}</span>
+        <span class="rank espn">${p.espnAdp}</span>`;
+      row.onclick = () => openSheet(p.name);
+      list.appendChild(row);
+    });
+    if (!rows.length) list.appendChild(el("div", "hint", "No players match."));
+    const n = BOARD.movedCount();
+    $("rank-sub").textContent = n
+      ? `Tap a player to move them. ${n} moved so far — the right-hand number is ESPN's.`
+      : "Tap a player to move them. The right-hand number is where ESPN has them.";
+  }
+
+  // ---- the move sheet (shared by this screen and the draft's Available list) ----
+  function openSheet(name) {
+    sheetName = name;
+    $("rank-sheet").classList.remove("hidden");
+    renderSheet();
+    refreshLists();
+  }
+
+  function closeSheet() {
+    if (!sheetName) return;
+    sheetName = null;
+    $("rank-sheet").classList.add("hidden");
+    refreshLists();
+  }
+
+  function renderSheet() {
+    if (!sheetName) return;
+    const p = PLAYERS.find((x) => x.name === sheetName);
+    if (!p) return closeSheet();
+    const r = BOARD.rankOf(sheetName), d = BOARD.delta(sheetName);
+    $("rs-name").innerHTML = `<span class="badge b-${p.pos}">${p.pos}</span> ${p.name}
+      <span class="pteam">${p.team}</span>`;
+    const moved = BOARD.isMoved(sheetName) && d
+      ? `<b>#${r}</b> on your board — ${d > 0 ? "up" : "down"} ${Math.abs(d)} from ESPN's #${BOARD.espnRankOf(sheetName)}`
+      : `<b>#${r}</b> — ESPN has them #${BOARD.espnRankOf(sheetName)} (ADP ${p.espnAdp})`;
+    $("rs-meta").innerHTML = moved;
+    const input = $("rs-rank");
+    if (document.activeElement !== input) input.value = r;
+    input.max = BOARD.size();
+  }
+
+  // Re-render whichever list is on screen after a move.
+  function refreshLists() {
+    if (!$("rankings").classList.contains("hidden")) renderRankList();
+    if (!$("draft").classList.contains("hidden") && draft) renderPlayers();
+  }
+
+  function initSheet() {
+    const sheet = $("rank-sheet");
+    const act = (a) => {
+      if (!sheetName) return;
+      if (a === "up") BOARD.nudge(sheetName, -1);
+      else if (a === "down") BOARD.nudge(sheetName, +1);
+      else if (a === "go") {
+        const v = parseInt($("rs-rank").value, 10);
+        if (v > 0) BOARD.moveTo(sheetName, v);
+        $("rs-rank").blur();
+      } else if (a === "reset") BOARD.resetOne(sheetName);
+      renderSheet(); refreshLists(); renderBoardStatus();
+    };
+    sheet.querySelectorAll("[data-act]").forEach((b) => { b.onclick = () => act(b.dataset.act); });
+    $("rs-close").onclick = closeSheet;
+    sheet.querySelector(".rs-backdrop").onclick = closeSheet;
+    $("rs-rank").onkeydown = (e) => { if (e.key === "Enter") act("go"); };
   }
 
   // ================= SETUP =================
@@ -100,7 +222,7 @@
 
   // ================= DRAFT =================
   function startDraft() {
-    draft = createDraft({ players: PLAYERS, teams: setup.teams, keepers: setup.keepers, seed: (Math.random() * 1e9) | 0 });
+    draft = createDraft({ players: BOARD.ordered(), teams: setup.teams, keepers: setup.keepers, seed: (Math.random() * 1e9) | 0 });
     running = true; userAuto = false;
     $("setup").classList.add("hidden");
     $("results").classList.add("hidden");
@@ -174,14 +296,16 @@
     let avail = draft.available();
     if (filterPos !== "ALL") avail = avail.filter((p) => p.pos === filterPos);
     if (searchStr) avail = avail.filter((p) => p.name.toLowerCase().includes(searchStr));
+    avail.sort((a, b) => BOARD.rankOf(a.name) - BOARD.rankOf(b.name));
     avail.slice(0, 200).forEach((p) => {
       const draftable = canDraftNow && canRoster(userTeam().roster, p.pos);
-      const row = el("div", "prow" + (draftable ? " draftable" : ""));
-      row.innerHTML = `<span class="rank">${p.adp}</span>
-        <span><span class="badge b-${p.pos}">${p.pos}</span>
-        <span class="pname">${p.name}</span><span class="pteam">${p.team}</span></span>
-        <span class="rank">${draftable ? "＋" : ""}</span>`;
+      const row = el("div", "prow" + (draftable ? " draftable" : "") + (p.name === sheetName ? " editing" : ""));
+      row.innerHTML = `<span class="rank">${BOARD.rankOf(p.name)}</span>
+        <span class="pmain"><span class="badge b-${p.pos}">${p.pos}</span>
+        <span class="pname">${p.name}</span><span class="pteam">${p.team}</span>${deltaChip(p.name)}</span>
+        <span class="rowend">${draftable ? '<span class="plus">＋</span>' : ""}<button class="rankbtn" aria-label="Move ${p.name}">⋮</button></span>`;
       if (draftable) row.onclick = () => onPickPlayer(p.name);
+      row.querySelector(".rankbtn").onclick = (e) => { e.stopPropagation(); openSheet(p.name); };
       list.appendChild(row);
     });
     if (!avail.length) list.appendChild(el("div", "hint", "No players match."));
@@ -240,7 +364,15 @@
 
   // ================= wire up =================
   function init() {
-    renderSetup(); initKeeperSearch(); initTabs();
+    BOARD.init(PLAYERS);
+    renderSetup(); initKeeperSearch(); initTabs(); initSheet(); renderBoardStatus();
+    $("edit-board").onclick = showRankings;
+    $("rank-done").onclick = hideRankings;
+    $("rank-reset").onclick = () => {
+      if (!BOARD.movedCount() || confirm("Put every player back at their ESPN ADP?")) {
+        BOARD.resetAll(); renderRankList(); renderSheet(); renderBoardStatus();
+      }
+    };
     $("start-btn").onclick = startDraft;
     $("sim-pick").onclick = simToMyPick;
     $("autopick").onclick = () => { if (draft.isUserOnClock()) { draft.autoPickUser(); render(); tick(); } };
@@ -253,6 +385,7 @@
 
   function resetToSetup() {
     clearTimeout(timer); running = false; userAuto = false; draft = null;
+    closeSheet();
     $("draft").classList.add("hidden"); $("results").classList.add("hidden");
     $("setup").classList.remove("hidden");
     document.body.classList.remove("in-draft");

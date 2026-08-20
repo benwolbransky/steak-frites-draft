@@ -1,11 +1,12 @@
 /* Steak Frites — offline cache. Bump CACHE when you ship changed files. */
-const CACHE = "steak-frites-v1";
+const CACHE = "steak-frites-v2";
 const ASSETS = [
   "./",
   "./index.html",
   "./manifest.webmanifest",
   "./src/styles.css",
   "./src/draft.js",
+  "./src/rankings.js",
   "./src/app.js",
   "./data/players.js",
   "./data/league.js",

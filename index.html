@@ -48,10 +48,43 @@
         </div>
         <ul id="keeper-list" class="keeper-list"></ul>
       </section>
+
+      <section class="card">
+        <h2>Your board <span class="opt">(rankings)</span></h2>
+        <p class="hint">Move a player up or down and the whole league drafts them that way —
+          the AI teams read this board, so bumping someone up makes them go earlier.</p>
+        <div class="board-summary">
+          <div id="board-status" class="board-status">Straight ESPN ADP — nothing moved yet.</div>
+          <button id="edit-board" class="btn ghost">Edit board →</button>
+        </div>
+      </section>
     </div>
 
     <div class="start-row">
       <button id="start-btn" class="btn primary">Start draft →</button>
+    </div>
+  </main>
+
+  <!-- ===== RANKINGS ===== -->
+  <main id="rankings" class="screen hidden">
+    <div class="rank-head">
+      <div>
+        <h2>Your board</h2>
+        <div id="rank-sub" class="hint">Tap a player to move them.</div>
+      </div>
+      <div class="rank-actions">
+        <button id="rank-reset" class="btn ghost">Reset all</button>
+        <button id="rank-done" class="btn primary">Done</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="players-head">
+        <h3>Players</h3>
+        <input id="rank-search" type="text" placeholder="Search…" autocomplete="off"
+               autocorrect="off" autocapitalize="none" spellcheck="false" />
+        <div class="pos-filters" id="rank-filters"></div>
+      </div>
+      <div id="rank-list" class="player-list rank-list"></div>
     </div>
   </main>
 
@@ -114,9 +147,33 @@
     <div id="results-grid" class="results-grid"></div>
   </main>
 
+  <!-- rank editor: one bottom sheet, shared by the board screen and the draft list -->
+  <div id="rank-sheet" class="rank-sheet hidden">
+    <div class="rs-backdrop"></div>
+    <div class="rs-card" role="dialog" aria-modal="true" aria-labelledby="rs-name">
+      <div class="rs-head">
+        <div class="rs-name" id="rs-name"></div>
+        <button class="rs-close" id="rs-close" aria-label="Close">✕</button>
+      </div>
+      <div class="rs-meta" id="rs-meta"></div>
+      <div class="rs-controls">
+        <button class="rs-step" data-act="up" aria-label="Move up one spot">▲</button>
+        <button class="rs-step" data-act="down" aria-label="Move down one spot">▼</button>
+        <label class="rs-jump">rank
+          <input id="rs-rank" type="number" inputmode="numeric" min="1" />
+        </label>
+        <button class="btn primary" data-act="go">Move</button>
+      </div>
+      <div class="rs-foot">
+        <button class="btn ghost" data-act="reset">Reset to ESPN</button>
+      </div>
+    </div>
+  </div>
+
   <script src="data/players.js"></script>
   <script src="data/league.js"></script>
   <script src="src/draft.js"></script>
+  <script src="src/rankings.js"></script>
   <script src="src/app.js"></script>
   <script>
     if ("serviceWorker" in navigator) {

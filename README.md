@@ -67,6 +67,8 @@ The draft screen is one panel at a time, with a bottom tab bar:
 | **My team** | your roster by lineup slot |
 | **Board** | every pick so far, newest first |
 
+Tap **⋮** on any row in Available to re-rank that player without drafting them.
+
 When you come on the clock the Available tab pulses and the app jumps back to it, so you
 can sit on the board between picks without missing your turn. The clock bar stays pinned
 to the top; its controls scroll sideways.
@@ -103,6 +105,35 @@ Every team follows one personality — the difference is entirely **when they ta
 
 Everyone still fills a legal roster (a QB, ≥2 RB, ≥2 WR, a TE, a K and a DST), and
 K/DST come off the board late, the way real drafts go.
+
+### Your board (custom rankings)
+
+The setup screen has a **Your board** card — open **Edit board** and you get the full
+player pool in rank order. Tap anyone to open the move sheet: **▲/▼** shifts them a spot,
+or type a rank and hit **Move** to jump them anywhere. **Reset to ESPN** puts one player
+back; **Reset all** wipes the board clean.
+
+**This is the market, not a cheat sheet.** The AI teams draft off the same board you're
+editing, so moving a player up genuinely makes the league reach for them:
+
+| Parker Washington (ESPN #85) | Taken around |
+|---|---|
+| left alone | pick 82 |
+| moved to #8 | pick 12 |
+| moved to #150 | pick 118 |
+
+Under the hood the ESPN ADP values stay put as a fixed ladder of rungs, and a player's
+effective ADP is whichever rung they're standing on. So reordering never invents fake
+numbers — the real gaps between tiers survive, and only *who* occupies each slot changes.
+
+You can also re-rank **mid-draft**: every row in the Available list has a **⋮** handle that
+opens the same sheet (tapping the row itself still drafts). The AI reads the board at each
+pick, so a bump takes effect on the very next pick, not the next mock.
+
+Your board is saved in the browser, so it survives closing the app. A moved player carries a
+**▲12 / ▼8** badge showing the gap vs ESPN — only players *you* moved get badged, not the
+ones who drift a spot because someone jumped over them. K and DST are still held back until
+round 13 no matter where you rank them; that gate lives in the draft engine.
 
 ### Keepers
 
@@ -143,6 +174,7 @@ icons/                 home-screen / launcher icons
 data/players.js        ADP-ranked player pool (window.PLAYERS) — generated from live ESPN ADP
 data/league.js         league defaults: draft order + keepers + your team (pre-fills setup)
 src/draft.js           draft engine: snake order, keepers, roster rules, AI strategies (pure logic)
+src/rankings.js        your custom board: reorders players and rewrites effective ADP
 src/styles.css         theme + layout
 src/app.js             UI controller: setup, draft loop, results
 scripts/fetch-adp.mjs  refresh data/players.js from live ESPN ADP  (node scripts/fetch-adp.mjs)
