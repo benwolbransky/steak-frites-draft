@@ -52,19 +52,27 @@ makes one fewer live pick). Leave it empty for a straight draft.
 
 ## Updating ADP
 
-`data/players.js` is a **seed** board ordered by approximate half-PPR ADP — it is *not*
-live ESPN ADP. Before a real mock, refresh it: replace the array with the current board
-(each entry is `{ name, pos, team, adp }`, `adp` = overall rank, 1 = first off the board;
-`pos` ∈ `QB | RB | WR | TE | K | DST`). The draft order and the AI both read `adp`.
+`data/players.js` is generated from **live ESPN ADP**. Refresh it anytime (needs Node 18+):
+
+```bash
+node scripts/fetch-adp.mjs          # current season (2026)
+node scripts/fetch-adp.mjs 2027     # a specific season
+```
+
+The script pulls ESPN's public player endpoint, keeps QB/RB/WR/TE/K/DST, orders by ADP
+(`ownership.averageDraftPosition`, falling back to ESPN's PPR draft rank for players with
+no crowd ADP yet), and rewrites `data/players.js`. Each entry is `{ name, pos, team, adp }`;
+the draft order and the AI both read `adp`. No API key is required.
 
 ## Project structure
 
 ```
-index.html        app shell (loads the three scripts + styles)
-data/players.js    the ADP-ranked player pool  (window.PLAYERS)  — edit this to refresh
-src/draft.js       draft engine: snake order, keepers, roster rules, AI strategies (pure logic)
-src/styles.css     theme + layout
-src/app.js         UI controller: setup, draft loop, results
+index.html            app shell (loads the scripts + styles)
+data/players.js        ADP-ranked player pool (window.PLAYERS) — generated from live ESPN ADP
+src/draft.js           draft engine: snake order, keepers, roster rules, AI strategies (pure logic)
+src/styles.css         theme + layout
+src/app.js             UI controller: setup, draft loop, results
+scripts/fetch-adp.mjs  refresh data/players.js from live ESPN ADP  (node scripts/fetch-adp.mjs)
 ```
 
 The engine (`src/draft.js`) is pure logic with no DOM, so it's easy to test or reuse.
