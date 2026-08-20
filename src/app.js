@@ -25,6 +25,20 @@
   let draft = null, running = false, userAuto = false, timer = null;
   let filterPos = "ALL", searchStr = "";
 
+  // ---- phone tabs (the bottom bar; inert on desktop, where all panels show) ----
+  let activeTab = "players";
+
+  function setTab(name) {
+    activeTab = name;
+    document.querySelectorAll("#draft .panel").forEach((p) => p.classList.toggle("tab-active", p.dataset.panel === name));
+    document.querySelectorAll("#tabbar .tab").forEach((b) => b.classList.toggle("active", b.dataset.tab === name));
+    window.scrollTo({ top: 0 });
+  }
+
+  function initTabs() {
+    document.querySelectorAll("#tabbar .tab").forEach((b) => { b.onclick = () => setTab(b.dataset.tab); });
+  }
+
   // ================= SETUP =================
   function renderSetup() {
     const rows = $("team-rows"); rows.innerHTML = "";
@@ -91,7 +105,9 @@
     $("setup").classList.add("hidden");
     $("results").classList.add("hidden");
     $("draft").classList.remove("hidden");
+    document.body.classList.add("in-draft");
     buildPosFilters();
+    setTab("players");
     $("roster-title").textContent = `${userTeam().name} — your roster`;
     render(); tick();
   }
@@ -142,8 +158,13 @@
     $("pick-num").textContent = `Pick ${o.round}.${String(o.pickInRound).padStart(2, "0")}`;
     const t = draft.currentTeam();
     const oc = $("on-clock");
-    if (t.isUser && !userAuto) { oc.textContent = "🟡 Your pick — choose a player"; oc.className = "on-clock you"; }
+    const mine = t.isUser && !userAuto;
+    if (mine) { oc.textContent = "🟡 Your pick — choose a player"; oc.className = "on-clock you"; }
     else { oc.textContent = `On the clock: ${t.name} · ${STRATEGIES[t.strategy].label}`; oc.className = "on-clock"; }
+    const ptab = document.querySelector('#tabbar .tab[data-tab="players"]');
+    if (ptab) ptab.classList.toggle("needs-pick", mine);
+    // on a phone you may be sitting on the roster/board tab when your turn comes
+    if (mine && activeTab !== "players") setTab("players");
   }
 
   function renderPlayers() {
@@ -219,7 +240,7 @@
 
   // ================= wire up =================
   function init() {
-    renderSetup(); initKeeperSearch();
+    renderSetup(); initKeeperSearch(); initTabs();
     $("start-btn").onclick = startDraft;
     $("sim-pick").onclick = simToMyPick;
     $("autopick").onclick = () => { if (draft.isUserOnClock()) { draft.autoPickUser(); render(); tick(); } };
@@ -233,7 +254,9 @@
   function resetToSetup() {
     clearTimeout(timer); running = false; userAuto = false; draft = null;
     $("draft").classList.add("hidden"); $("results").classList.add("hidden");
-    $("setup").classList.remove("hidden"); renderSetup();
+    $("setup").classList.remove("hidden");
+    document.body.classList.remove("in-draft");
+    renderSetup();
   }
 
   document.addEventListener("DOMContentLoaded", init);

@@ -2,13 +2,24 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Steak Frites — Mock Draft</title>
+
+  <!-- PWA / iOS home-screen app -->
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#14110f" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Steak Frites" />
+  <link rel="apple-touch-icon" href="icons/icon-180.png" />
+  <link rel="icon" href="icons/icon-192.png" />
+
   <link rel="stylesheet" href="src/styles.css" />
 </head>
 <body>
   <header class="topbar">
-    <div class="brand"><span class="steak">🥩</span> Steak Frites <span class="sub">Mock Draft</span></div>
+    <div class="brand"><span class="steak">🍟</span> Steak Frites <span class="sub">Mock Draft</span></div>
     <div class="league-meta">10 teams · ½-PPR · snake w/ keepers · QB·2RB·2WR·2FLEX·TE·K·DST + 6 bench</div>
   </header>
 
@@ -26,20 +37,21 @@
         <h2>Keepers <span class="opt">(optional)</span></h2>
         <p class="hint">A keeper is locked to a team and uses that team's pick in the round you set.</p>
         <div class="keeper-form">
-          <input id="keeper-search" type="text" placeholder="Search player…" autocomplete="off" />
+          <input id="keeper-search" type="text" placeholder="Search player…" autocomplete="off"
+                 autocorrect="off" autocapitalize="none" spellcheck="false" />
           <div id="keeper-suggest" class="suggest"></div>
           <div class="keeper-controls">
             <select id="keeper-team"></select>
-            <label>Round <input id="keeper-round" type="number" min="1" max="16" value="1" /></label>
+            <label>Round <input id="keeper-round" type="number" inputmode="numeric" min="1" max="16" value="1" /></label>
             <button id="keeper-add" class="btn ghost" disabled>Add keeper</button>
           </div>
         </div>
         <ul id="keeper-list" class="keeper-list"></ul>
-
-        <div class="start-row">
-          <button id="start-btn" class="btn primary">Start draft →</button>
-        </div>
       </section>
+    </div>
+
+    <div class="start-row">
+      <button id="start-btn" class="btn primary">Start draft →</button>
     </div>
   </main>
 
@@ -62,25 +74,32 @@
     </div>
 
     <div class="draft-grid">
-      <section class="card players">
+      <section class="card players panel tab-active" data-panel="players">
         <div class="players-head">
           <h3>Available</h3>
+          <input id="player-search" type="text" placeholder="Search…" autocomplete="off"
+                 autocorrect="off" autocapitalize="none" spellcheck="false" />
           <div class="pos-filters" id="pos-filters"></div>
-          <input id="player-search" type="text" placeholder="Search…" autocomplete="off" />
         </div>
         <div id="player-list" class="player-list"></div>
       </section>
 
-      <section class="card roster">
+      <section class="card roster panel" data-panel="roster">
         <h3 id="roster-title">Your roster</h3>
         <div id="roster-slots" class="roster-slots"></div>
       </section>
 
-      <section class="card log">
+      <section class="card log panel" data-panel="board">
         <h3>Draft board</h3>
         <div id="pick-log" class="pick-log"></div>
       </section>
     </div>
+
+    <nav class="tabbar" id="tabbar">
+      <button class="tab active" data-tab="players"><span class="ticon">🏈</span>Available</button>
+      <button class="tab" data-tab="roster"><span class="ticon">📋</span>My team</button>
+      <button class="tab" data-tab="board"><span class="ticon">🗒️</span>Board</button>
+    </nav>
   </main>
 
   <!-- ===== RESULTS ===== -->
@@ -99,5 +118,10 @@
   <script src="data/league.js"></script>
   <script src="src/draft.js"></script>
   <script src="src/app.js"></script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+    }
+  </script>
 </body>
 </html>

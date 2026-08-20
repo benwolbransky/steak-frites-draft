@@ -4,12 +4,72 @@ A self-contained mock-draft simulator for the **Steak Frites** fantasy league. S
 draft with keepers, AI opponents that draft to ADP with distinct strategies, and a UI
 to draft your own team (or watch the whole thing run).
 
-No build step, no install — **open `index.html` in a browser.**
+No build step, no install — **open `index.html` in a browser**, or install it on your
+phone as a home-screen app (see [On your iPhone](#on-your-iphone)).
 
 ```bash
 open index.html          # macOS
 # or just double-click index.html
 ```
+
+## On your iPhone
+
+It's a PWA: hosted over https, iOS installs it to the home screen and runs it
+fullscreen with its own icon — no Safari chrome, no App Store, and it works with no
+signal once loaded (a service worker caches the whole app).
+
+### 1. Publish it
+
+Any static https host works. GitHub Pages is the shortest path:
+
+```bash
+# create the repo and push (needs the gh CLI: brew install gh)
+gh repo create steak-frites-draft --public --source=. --push
+
+# turn Pages on, serving from the main branch
+gh api -X POST repos/:owner/steak-frites-draft/pages \
+  -f 'source[branch]=main' -f 'source[path]=/'
+```
+
+No `gh`? Create the repo at github.com/new, then:
+
+```bash
+git remote add origin https://github.com/<you>/steak-frites-draft.git
+git push -u origin main
+```
+
+…and in the repo: **Settings → Pages → Source: Deploy from a branch → main / (root)**.
+
+Either way the app lands at `https://<you>.github.io/steak-frites-draft/` a minute or
+two later. Note a public repo makes `data/league.js` — your team names and everyone's
+keepers — readable by anyone with the URL. Use a **private** repo if that matters;
+Pages on a private repo needs a paid GitHub plan.
+
+### 2. Install it
+
+On the iPhone, open that URL **in Safari** (not Chrome — only Safari can install to the
+home screen), then **Share → Add to Home Screen → Add**. It shows up as *Steak Frites*
+with the frites icon and launches standalone.
+
+### 3. Updating it
+
+`git push` and Pages redeploys. The service worker is network-first, so a reopened app
+picks up the new version on its own; bump `CACHE` in `sw.js` if you ever need to force
+every cached file to refresh.
+
+### Drafting on the phone
+
+The draft screen is one panel at a time, with a bottom tab bar:
+
+| Tab | |
+|---|---|
+| **Available** | the player pool — search, filter by position, tap a row to draft |
+| **My team** | your roster by lineup slot |
+| **Board** | every pick so far, newest first |
+
+When you come on the clock the Available tab pulses and the app jumps back to it, so you
+can sit on the board between picks without missing your turn. The clock bar stays pinned
+to the top; its controls scroll sideways.
 
 ## League settings
 
@@ -76,13 +136,17 @@ the draft order and the AI both read `adp`. No API key is required.
 ## Project structure
 
 ```
-index.html            app shell (loads the scripts + styles)
+index.html             app shell (loads the scripts + styles)
+manifest.webmanifest   PWA metadata: name, icons, standalone display
+sw.js                  service worker — offline cache for the whole app
+icons/                 home-screen / launcher icons
 data/players.js        ADP-ranked player pool (window.PLAYERS) — generated from live ESPN ADP
 data/league.js         league defaults: draft order + keepers + your team (pre-fills setup)
 src/draft.js           draft engine: snake order, keepers, roster rules, AI strategies (pure logic)
 src/styles.css         theme + layout
 src/app.js             UI controller: setup, draft loop, results
 scripts/fetch-adp.mjs  refresh data/players.js from live ESPN ADP  (node scripts/fetch-adp.mjs)
+scripts/make-icons.py  regenerate icons/                        (python3 scripts/make-icons.py)
 ```
 
 The engine (`src/draft.js`) is pure logic with no DOM, so it's easy to test or reuse.

@@ -11,26 +11,41 @@
   --bad: #d9694f;
   --qb: #d98cc4; --rb: #6cc07a; --wr: #5aa9e6; --te: #e0a24b; --k: #b7a7f0; --dst: #b09a86;
   --radius: 12px;
+  --tabbar-h: 3.4rem;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--ink); }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  -webkit-text-size-adjust: 100%;          /* no rotation reflow surprises on iOS */
+  overscroll-behavior-y: none;             /* kill rubber-band bounce in standalone */
+}
 h2, h3 { margin: 0 0 .5rem; font-weight: 650; }
 .hint { color: var(--muted); font-size: .85rem; margin: .2rem 0 .9rem; }
 .opt, .sub { color: var(--muted); font-weight: 400; }
 .hidden { display: none !important; }
 
+/* iOS: never let a tap flash a grey box, and never double-tap-zoom a control */
+button, .prow, .tab { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+
 .topbar {
   display: flex; align-items: baseline; gap: 1rem; flex-wrap: wrap;
   padding: .8rem 1.2rem; border-bottom: 1px solid var(--line); background: var(--panel);
+  padding-top: calc(.8rem + env(safe-area-inset-top));
+  padding-left: calc(1.2rem + env(safe-area-inset-left));
+  padding-right: calc(1.2rem + env(safe-area-inset-right));
 }
 .brand { font-size: 1.25rem; font-weight: 700; letter-spacing: .2px; }
 .brand .steak { margin-right: .2rem; }
 .brand .sub { font-size: .95rem; margin-left: .3rem; }
 .league-meta { color: var(--muted); font-size: .8rem; margin-left: auto; }
 
-.screen { padding: 1.1rem 1.2rem; }
+.screen {
+  padding: 1.1rem 1.2rem;
+  padding-left: calc(1.2rem + env(safe-area-inset-left));
+  padding-right: calc(1.2rem + env(safe-area-inset-right));
+}
 .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 1rem; }
 
 /* ---- setup ---- */
@@ -52,14 +67,15 @@ input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1
 .keeper-controls label { font-size: .8rem; color: var(--muted); display: inline-flex; gap: .3rem; align-items: center; }
 .keeper-controls input[type=number] { width: 3.5rem; }
 .suggest { position: absolute; top: 2.4rem; left: 0; right: 0; background: var(--panel-2);
-  border: 1px solid var(--line); border-radius: 8px; max-height: 220px; overflow: auto; z-index: 5; }
+  border: 1px solid var(--line); border-radius: 8px; max-height: 220px; overflow: auto; z-index: 5;
+  -webkit-overflow-scrolling: touch; }
 .suggest div { padding: .4rem .6rem; cursor: pointer; font-size: .85rem; }
 .suggest div:hover, .suggest div.active { background: var(--line); }
 .keeper-list { list-style: none; padding: 0; margin: .8rem 0 0; display: flex; flex-direction: column; gap: .35rem; }
 .keeper-list li { display: flex; justify-content: space-between; align-items: center;
   background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: .4rem .6rem; font-size: .85rem; }
-.keeper-list button { background: none; border: none; color: var(--bad); cursor: pointer; font-size: 1rem; }
-.start-row { margin-top: 1.2rem; text-align: right; }
+.keeper-list button { background: none; border: none; color: var(--bad); cursor: pointer; font-size: 1rem; padding: .25rem .5rem; }
+.start-row { max-width: 1100px; margin: 1.2rem auto 0; text-align: right; }
 
 /* ---- buttons ---- */
 .btn { border: 1px solid var(--line); background: var(--panel-2); color: var(--ink);
@@ -81,12 +97,13 @@ input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1
 
 /* ---- draft grid ---- */
 .draft-grid { display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 1rem; align-items: start; }
-.players-head { display: grid; grid-template-columns: auto 1fr auto; gap: .6rem; align-items: center; margin-bottom: .6rem; }
-.pos-filters { display: flex; gap: .3rem; flex-wrap: wrap; }
+.players-head { display: grid; grid-template-columns: auto minmax(5rem, 1fr) auto; gap: .6rem; align-items: center; margin-bottom: .6rem; }
+.pos-filters { display: flex; gap: .3rem; flex-wrap: nowrap; }
 .pos-filters button { border: 1px solid var(--line); background: var(--panel-2); color: var(--muted);
   border-radius: 999px; padding: .2rem .6rem; font-size: .72rem; cursor: pointer; }
 .pos-filters button.active { background: var(--accent); color: #241a0c; border-color: var(--accent); font-weight: 650; }
-.player-list { max-height: 68vh; overflow: auto; display: flex; flex-direction: column; gap: 2px; }
+.player-list { max-height: 68vh; overflow: auto; display: flex; flex-direction: column; gap: 2px;
+  -webkit-overflow-scrolling: touch; }
 .prow { display: grid; grid-template-columns: 2.2rem 1fr auto; align-items: center; gap: .5rem;
   padding: .4rem .55rem; border-radius: 8px; background: var(--panel-2); border: 1px solid transparent; }
 .prow.draftable { cursor: pointer; }
@@ -107,7 +124,8 @@ input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1
 .slot.bench { background: transparent; border: 1px dashed var(--line); }
 
 /* ---- pick log / board ---- */
-.pick-log { max-height: 68vh; overflow: auto; display: flex; flex-direction: column; gap: 2px; }
+.pick-log { max-height: 68vh; overflow: auto; display: flex; flex-direction: column; gap: 2px;
+  -webkit-overflow-scrolling: touch; }
 .logrow { display: grid; grid-template-columns: 3rem auto 1fr; gap: .5rem; align-items: baseline;
   padding: .3rem .4rem; border-radius: 6px; font-size: .82rem; }
 .logrow.mine { background: rgba(224,162,75,.12); }
@@ -117,14 +135,147 @@ input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1
 .kchip { font-size: .6rem; color: var(--accent); border: 1px solid var(--accent); border-radius: 4px; padding: 0 .25rem; margin-left: .3rem; }
 
 /* ---- results ---- */
-.results-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+.results-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; gap: .6rem; flex-wrap: wrap; }
 .results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: .8rem; }
 .team-card h4 { margin: 0 0 .1rem; font-size: .95rem; }
 .team-card .tstrat { color: var(--muted); font-size: .72rem; margin-bottom: .5rem; }
 .team-card .rrow { display: grid; grid-template-columns: 2.6rem 1fr; gap: .4rem; font-size: .8rem; padding: .12rem 0; }
 .team-card .rrow .slabel { color: var(--muted); font-size: .68rem; }
 
+/* ---- bottom tab bar (phone only) ---- */
+.tabbar { display: none; }
+
 @media (max-width: 1000px) {
   .setup-grid, .draft-grid { grid-template-columns: 1fr; }
   .player-list, .pick-log { max-height: 40vh; }
+}
+
+/* =======================================================================
+   PHONE — one panel at a time, driven by the bottom tab bar.
+   The page itself scrolls (no nested scrollers): iOS handles that best.
+   ======================================================================= */
+@media (max-width: 760px) {
+  :root { --radius: 14px; }
+
+  /* 16px minimum on anything focusable, or iOS zooms the whole page in */
+  input, select { font-size: 16px; padding: .6rem .65rem; }
+
+  .topbar { padding: .6rem .9rem; padding-top: calc(.6rem + env(safe-area-inset-top)); gap: .3rem; }
+  .brand { font-size: 1.05rem; }
+  .brand .sub { display: none; }
+  .league-meta { font-size: .68rem; margin-left: 0; width: 100%; line-height: 1.3; }
+  /* during a draft every row counts — drop the league blurb from the header */
+  body.in-draft .league-meta { display: none; }
+  body.in-draft .topbar { padding-bottom: .45rem; }
+
+  .screen { padding: .8rem .8rem calc(1rem + env(safe-area-inset-bottom)); }
+  .card { padding: .8rem; }
+
+  /* --- setup --- */
+  /* slot #, name and the "you" radio share row 1; the strategy select spans row 2 */
+  .team-row { grid-template-columns: 1.25rem 1fr auto; row-gap: .35rem; column-gap: .5rem; }
+  .team-row > span:first-child { grid-area: 1 / 1; }
+  .team-row input[type=text] { grid-area: 1 / 2; }
+  .team-row .you-radio { grid-area: 1 / 3; }
+  .team-row select { grid-area: 2 / 1 / 3 / -1; }
+  .strat-desc { grid-column: 1 / -1; margin-bottom: .5rem; padding-bottom: .5rem; border-bottom: 1px solid var(--line); }
+  .team-rows { gap: .15rem; }
+  .you-radio { font-size: .8rem; padding: .3rem; }
+  .keeper-controls { display: grid; grid-template-columns: 1fr auto; gap: .5rem; }
+  .keeper-controls select { min-width: 0; }
+  .keeper-controls label { justify-content: flex-end; }
+  .keeper-controls #keeper-add { grid-column: 1 / -1; padding: .7rem; }
+  .suggest { top: 3rem; }
+  .suggest div { padding: .7rem .6rem; font-size: .95rem; }
+  .start-row {
+    position: sticky; bottom: 0; z-index: 4; text-align: stretch;
+    margin: .9rem -.8rem 0; padding: .7rem .8rem;
+    padding-bottom: calc(.7rem + env(safe-area-inset-bottom));
+    background: linear-gradient(to top, var(--bg) 62%, transparent);
+  }
+  #start-btn { width: 100%; padding: .9rem; font-size: 1rem; }
+
+  /* tighter team rows so the setup list isn't a mile long */
+  .team-row { row-gap: .3rem; }
+  .strat-desc { font-size: .74rem; margin: 0 0 .45rem; padding-bottom: .45rem; }
+
+  /* --- draft: sticky clock, tabbed panels, fixed tab bar --- */
+  #draft { padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + .8rem); }
+  .clockbar {
+    position: sticky; top: 0; z-index: 4; margin: -.8rem -.8rem .7rem; padding: .6rem .8rem;
+    background: var(--bg); border-bottom: 1px solid var(--line);
+    flex-direction: column; align-items: stretch; gap: .5rem;
+  }
+  .clock-left { display: flex; align-items: baseline; gap: .55rem; flex-wrap: wrap; }
+  .pick-num { font-size: 1.05rem; }
+  .on-clock { font-size: .82rem; }
+  /* controls scroll sideways instead of wrapping into three rows */
+  .controls { flex-wrap: nowrap; overflow-x: auto; gap: .4rem; padding-bottom: .1rem;
+    scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .controls::-webkit-scrollbar { display: none; }
+  .controls .btn { flex: 0 0 auto; padding: .45rem .7rem; font-size: .8rem; }
+  .controls .speed { flex: 0 0 auto; }
+  .controls .speed select { padding: .35rem .4rem; font-size: 14px; }
+
+  .draft-grid { gap: 0; }
+  .draft-grid .panel { display: none; }
+  .draft-grid .panel.tab-active { display: block; }
+  .card.panel { border: none; background: transparent; padding: 0; }
+
+  .players-head { grid-template-columns: 1fr; gap: .5rem; }
+  .players-head h3 { display: none; }
+  #player-search { width: 100%; }
+  .pos-filters { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .pos-filters::-webkit-scrollbar { display: none; }
+  .pos-filters button { flex: 0 0 auto; padding: .45rem .85rem; font-size: .8rem; }
+
+  /* full-height lists: the page scrolls, not a box inside it */
+  .player-list, .pick-log { max-height: none; overflow: visible; gap: 4px; }
+  .prow { grid-template-columns: 2.6rem 1fr 2rem; padding: .65rem .6rem; min-height: 46px; }
+  .prow .pname { font-size: .98rem; }
+  .prow .pteam { font-size: .8rem; }
+  .prow .rank { font-size: .85rem; }
+  .prow.draftable { border-color: var(--line); }
+  .prow.draftable:active { border-color: var(--accent); background: var(--line); }
+  .prow.draftable .rank:last-child { color: var(--accent); font-size: 1.15rem; }
+
+  .slot { padding: .6rem .6rem; font-size: .95rem; grid-template-columns: 2.8rem 1fr; }
+  .logrow { padding: .5rem .35rem; font-size: .88rem; align-items: center;
+    grid-template-columns: 2.5rem minmax(0, 1fr) auto; gap: .4rem; }
+  .logrow > span:nth-child(2) { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .logrow .lteam { text-align: right; font-size: .72rem; }
+
+  /* --- results --- */
+  .results-head h2 { font-size: 1.15rem; }
+  .results-head > div { display: flex; gap: .5rem; }
+  .results-grid { grid-template-columns: 1fr; }
+
+  /* --- the tab bar itself --- */
+  #draft .tabbar {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 6;
+    background: var(--panel); border-top: 1px solid var(--line);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .tab {
+    background: none; border: none; color: var(--muted); cursor: pointer;
+    font-size: .68rem; font-weight: 600; padding: .5rem .2rem .55rem;
+    display: flex; flex-direction: column; align-items: center; gap: .15rem;
+    height: var(--tabbar-h); justify-content: center;
+  }
+  .tab .ticon { font-size: 1.15rem; line-height: 1; }
+  .tab.active { color: var(--accent); }
+  .tab .dot { position: absolute; }
+  /* pulsing dot on the Available tab when you're on the clock */
+  .tab[data-tab="players"].needs-pick::after {
+    content: ""; position: absolute; top: .45rem; margin-left: 1.5rem;
+    width: .45rem; height: .45rem; border-radius: 50%; background: var(--accent);
+    animation: pulse 1.1s ease-in-out infinite;
+  }
+  .tab { position: relative; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .25; } }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
 }
