@@ -30,6 +30,10 @@
         <h2>Teams &amp; strategies</h2>
         <p class="hint">Pick which team is <b>you</b>, and give every team a draft personality.
           The AI teams draft to ESPN-style ADP, bent by their strategy.</p>
+        <div class="jitter-row">
+          <label>AI randomness <select id="jitter-setup"></select></label>
+          <span id="jitter-desc" class="hint"></span>
+        </div>
         <div id="team-rows" class="team-rows"></div>
       </section>
 
@@ -101,6 +105,9 @@
         <button id="sim-all" class="btn ghost">Auto-draft all</button>
         <label class="speed">Speed
           <select id="speed"><option value="450">Slow</option><option value="180" selected>Normal</option><option value="40">Fast</option></select>
+        </label>
+        <label class="speed">Random
+          <select id="jitter"></select>
         </label>
         <button id="reset" class="btn danger">Reset</button>
       </div>

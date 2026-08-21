@@ -17,6 +17,17 @@
   const ROSTER_MAX = STARTERS + BENCH;                                      // 16
   const KDST_START_ROUND = 13;   // AI won't draft K/DST before this (except forced)
 
+  // How far an AI team's valuation can wander from ADP, in draft slots. This is the
+  // only source of variation between mocks, so it's the dial for how alike they feel.
+  // At 0 a draft is fully reproducible: the seed stops mattering entirely.
+  const JITTER = {
+    chalky: { label: "Chalky",  value: 0,  desc: "No wobble — the same draft every time." },
+    normal: { label: "Normal",  value: 6,  desc: "Teams stray a couple of slots from ADP." },
+    loose:  { label: "Loose",   value: 20, desc: "Real reaches and real fallers." },
+    chaos:  { label: "Chaos",   value: 45, desc: "ADP is a loose suggestion." },
+  };
+  const DEFAULT_JITTER = "normal";
+
   const STRATEGIES = {
     "2-RB":     { label: "2-RB (robust RB)",  desc: "Two RBs in the first few rounds, then best available." },
     "hero-RB":  { label: "Hero RB",           desc: "One anchor RB, load WR/TE, circle back to RB later." },
@@ -24,7 +35,8 @@
   };
 
   const CONFIG = { STARTER_SLOTS, FLEX_POS, BENCH, STARTERS, ROUNDS, POS_CAPS,
-                   ROSTER_MAX, STRATEGIES, scoring: "0.5 PPR", numTeams: 10 };
+                   ROSTER_MAX, STRATEGIES, JITTER, DEFAULT_JITTER,
+                   scoring: "0.5 PPR", numTeams: 10 };
 
   // ---- Roster helpers ------------------------------------------------------
   function newRoster() {
@@ -92,7 +104,7 @@
 
   // ---- AI pick selection ---------------------------------------------------
   // Lower "score" = drafted sooner. Base is ADP; strategy + needs + gating nudge it.
-  function aiChoose(team, available, round, rng) {
+  function aiChoose(team, available, round, rng, jitter) {
     const roster = team.roster;
     const strat = team.strategy;
     const rbCount = roster.posCount.RB;
@@ -142,7 +154,7 @@
       if (slot && slot !== "BENCH") score -= 8;
       if (slot === "BENCH") score += 6;
 
-      score += (rng() - 0.5) * 6;   // small jitter so redrafts vary
+      score += (rng() - 0.5) * jitter;   // the only thing that makes two mocks differ
 
       if (score < bestScore) { bestScore = score; best = p; }
     }
@@ -193,6 +205,8 @@
 
     const state = {
       config: CONFIG, teams, order, picks, missingKeepers, keeperByPick,
+      // Live: changing this mid-draft applies from the next pick onward.
+      jitter: opts.jitter == null ? JITTER[DEFAULT_JITTER].value : opts.jitter,
       cursor: 0,                   // index into order
       available() { return players.filter((p) => !drafted.has(p.name)); },
       isComplete() { return this.cursor >= order.length; },
@@ -236,7 +250,7 @@
       if (keeper) { record(keeper, true); return picks[picks.length - 1]; }
       const team = teams[o.teamIdx];
       if (team.isUser) return null;                // wait for the human
-      const choice = aiChoose(team, state.available(), o.round, rng);
+      const choice = aiChoose(team, state.available(), o.round, rng, state.jitter);
       if (choice) record(choice, false);
       else state.cursor++;                         // safety: nothing draftable
       return picks[picks.length - 1] || null;
@@ -246,7 +260,7 @@
     state.autoPickUser = function () {
       const team = state.currentTeam();
       if (!team || !team.isUser) return null;
-      const choice = aiChoose(team, state.available(), order[state.cursor].round, rng);
+      const choice = aiChoose(team, state.available(), order[state.cursor].round, rng, state.jitter);
       if (choice) { record(choice, false); return picks[picks.length - 1]; }
       return null;
     };

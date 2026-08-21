@@ -36,6 +36,45 @@
     window.scrollTo({ top: 0 });
   }
 
+  // ---- randomness dial ----------------------------------------------------
+  // How far AI teams stray from ADP. It's the only source of variation between
+  // mocks, so "Chalky" (0) also makes a draft perfectly reproducible.
+  const JITTER_KEY = "steak-frites:jitter";
+
+  // One setting, two pickers: on setup (choose before you start) and on the clock bar
+  // (change it live, mid-draft). Both read and write jitterKey.
+  let jitterKey = CONFIG.DEFAULT_JITTER;
+
+  function initJitter() {
+    try {
+      const saved = localStorage.getItem(JITTER_KEY);
+      if (CONFIG.JITTER[saved]) jitterKey = saved;
+    } catch (e) { /* private mode */ }
+
+    ["jitter-setup", "jitter"].forEach((id) => {
+      const sel = $(id);
+      Object.entries(CONFIG.JITTER).forEach(([key, j]) => {
+        const o = el("option", null, j.label);
+        o.value = key; o.title = j.desc;
+        sel.appendChild(o);
+      });
+      sel.onchange = () => setJitter(sel.value);
+    });
+    setJitter(jitterKey);
+  }
+
+  function setJitter(key) {
+    if (!CONFIG.JITTER[key]) return;
+    jitterKey = key;
+    try { localStorage.setItem(JITTER_KEY, key); } catch (e) { /* private mode */ }
+    $("jitter-setup").value = key;
+    $("jitter").value = key;
+    $("jitter-desc").textContent = CONFIG.JITTER[key].desc;
+    if (draft) draft.jitter = jitterValue();       // takes effect on the next pick
+  }
+
+  function jitterValue() { return CONFIG.JITTER[jitterKey].value; }
+
   function initTabs() {
     document.querySelectorAll("#tabbar .tab").forEach((b) => { b.onclick = () => setTab(b.dataset.tab); });
   }
@@ -222,7 +261,8 @@
 
   // ================= DRAFT =================
   function startDraft() {
-    draft = createDraft({ players: BOARD.ordered(), teams: setup.teams, keepers: setup.keepers, seed: (Math.random() * 1e9) | 0 });
+    draft = createDraft({ players: BOARD.ordered(), teams: setup.teams, keepers: setup.keepers,
+                          jitter: jitterValue(), seed: (Math.random() * 1e9) | 0 });
     running = true; userAuto = false;
     $("setup").classList.add("hidden");
     $("results").classList.add("hidden");
@@ -365,7 +405,7 @@
   // ================= wire up =================
   function init() {
     BOARD.init(PLAYERS);
-    renderSetup(); initKeeperSearch(); initTabs(); initSheet(); renderBoardStatus();
+    renderSetup(); initKeeperSearch(); initTabs(); initSheet(); initJitter(); renderBoardStatus();
     $("edit-board").onclick = showRankings;
     $("rank-done").onclick = hideRankings;
     $("rank-reset").onclick = () => {

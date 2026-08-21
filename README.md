@@ -13,8 +13,7 @@ open index.html          # macOS
 ```
 
 ## On your iPhone
-
-It's a PWA: hosted over https, iOS installs it to the home screen and runs it
+yes pleacreen and runs it
 fullscreen with its own icon — no Safari chrome, no App Store, and it works with no
 signal once loaded (a service worker caches the whole app).
 
@@ -95,6 +94,9 @@ to the top; its controls scroll sideways.
    speed of the AI picks.
 3. **Results** — every team's final roster, laid out by lineup slot.
 
+Two dials sit on the clock bar: **Speed** (how fast the AI picks tick by) and
+**Random** (how much the AI strays from ADP — see [AI randomness](#ai-randomness)).
+
 ### Draft strategies
 
 Every team follows one personality — the difference is entirely **when they take RBs**:
@@ -134,6 +136,29 @@ Your board is saved in the browser, so it survives closing the app. A moved play
 **▲12 / ▼8** badge showing the gap vs ESPN — only players *you* moved get badged, not the
 ones who drift a spot because someone jumped over them. K and DST are still held back until
 round 13 no matter where you rank them; that gate lives in the draft engine.
+
+### AI randomness
+
+How far the AI teams stray from ADP — the **only** thing that makes two mocks differ.
+Set it on the setup screen, or change it **mid-draft** from the clock bar (it applies
+from the next pick on). Your choice is remembered.
+
+| | Wobble | Different 1.01s in 40 mocks | Pick-for-pick repeat |
+|---|---|---|---|
+| **Chalky** | none | 1 | 100% |
+| **Normal** (default) | ±3 slots | 2 | 33% |
+| **Loose** | ±10 slots | 5 | 17% |
+| **Chaos** | ±22 slots | 8 | 9% |
+
+**Chalky is fully deterministic** — the seed stops mattering, so the same setup always
+produces the identical draft. That makes it the right mode for testing a change to your
+board: run it once, move a player, run it again, and every difference you see is your
+edit rather than noise.
+
+At Normal, expect the top of the draft to be near-fixed (Gibbs goes 1.01 in most mocks)
+and the variety to build as you go — by rounds 15–16 a given pick slot sees 15–20
+different players across mocks. Loose and Chaos push real reaches and fallers into the
+early rounds too.
 
 ### Keepers
 
