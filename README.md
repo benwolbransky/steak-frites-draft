@@ -99,7 +99,16 @@ Two dials sit on the clock bar: **Speed** (how fast the AI picks tick by) and
 
 ### Draft strategies
 
-Every team follows one personality — the difference is entirely **when they take RBs**:
+Every team is set to **Random** by default — its strategy is rolled when the draft
+starts, so no two mocks have the same room. Half the time it's a free-for-all (each team
+independent, 1-in-3 each); the other half **the room has a trend**: one strategy, picked
+at random, that ~70% of the league is chasing. The draft board shows which you got
+("*Hero RB is the trend this year — 7 of 10 teams*").
+
+Set a team's strategy by hand and it is **never** overridden — pin one owner to Zero RB
+and the other nine still roll around them.
+
+The three personalities differ entirely in **when they take RBs**:
 
 - **2-RB (robust RB)** — two RBs in the first few rounds, then best available.
 - **Hero RB** — one anchor RB early, load up WR/TE, circle back to RB later.
@@ -139,26 +148,39 @@ round 13 no matter where you rank them; that gate lives in the draft engine.
 
 ### AI randomness
 
-How far the AI teams stray from ADP — the **only** thing that makes two mocks differ.
-Set it on the setup screen, or change it **mid-draft** from the clock bar (it applies
-from the next pick on). Your choice is remembered.
+How deep down the board an AI team is willing to look. A team considers everyone within
+`reach` of the best player left and picks among them **weighted toward the top**, so most
+picks are near-ADP while a genuine reach happens often enough to keep mocks distinct. Set
+it on the setup screen, or change it **mid-draft** from the clock bar (it applies from the
+next pick on). Your choice is remembered.
 
-| | Wobble | Different 1.01s in 40 mocks | Pick-for-pick repeat |
+| | Reach | Different 1.01s in 60 mocks | Pick-for-pick repeat | Your roster repeat |
+|---|---|---|---|---|
+| **Chalky** | 0 | 2 | 54% | 55% |
+| **Normal** (default) | 18 | 12 | 9% | 15% |
+| **Loose** | 34 | 16 | 6% | 15% |
+| **Chaos** | 60 | 22 | 4% | 13% |
+
+**Chalky** is strictly best-available. It's identical every time *only if you also set the
+strategies by hand* — with teams on Random the strategy roll still varies the draft. Pin
+the strategies and Chalky becomes a fixed baseline, which is the way to test a board edit:
+run it, move a player, run it again, and every difference is your edit rather than noise.
+
+#### Elite players don't free-fall
+
+Reaching deep would normally let a first-round talent slide into the fourth. It doesn't,
+because the further past a player's ADP the draft has gone, the harder the room corrects —
+and the better the player, the harder that correction (`fallPull` in `src/draft.js`). Slide
+past ADP for a top-24 RB/WR/TE, measured over 60 mocks at Normal:
+
+| | Median | 95th | Worst |
 |---|---|---|---|
-| **Chalky** | none | 1 | 100% |
-| **Normal** (default) | ±3 slots | 2 | 33% |
-| **Loose** | ±10 slots | 5 | 17% |
-| **Chaos** | ±22 slots | 8 | 9% |
+| with the anti-fall rule | 2 picks | 10 | 16 |
+| without it | 1 pick | 23 | 37 |
 
-**Chalky is fully deterministic** — the seed stops mattering, so the same setup always
-produces the identical draft. That makes it the right mode for testing a change to your
-board: run it once, move a player, run it again, and every difference you see is your
-edit rather than noise.
-
-At Normal, expect the top of the draft to be near-fixed (Gibbs goes 1.01 in most mocks)
-and the variety to build as you go — by rounds 15–16 a given pick slot sees 15–20
-different players across mocks. Loose and Chaos push real reaches and fallers into the
-early rounds too.
+So the tail is what it fixes: elites still slip a couple of picks, but they stop sliding a
+full two rounds. Late-round players are left free to drift, which is where the variety
+comes from.
 
 ### Keepers
 

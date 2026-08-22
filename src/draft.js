@@ -17,16 +17,36 @@
   const ROSTER_MAX = STARTERS + BENCH;                                      // 16
   const KDST_START_ROUND = 13;   // AI won't draft K/DST before this (except forced)
 
-  // How far an AI team's valuation can wander from ADP, in draft slots. This is the
-  // only source of variation between mocks, so it's the dial for how alike they feel.
-  // At 0 a draft is fully reproducible: the seed stops mattering entirely.
-  const JITTER = {
-    chalky: { label: "Chalky",  value: 0,  desc: "No wobble — the same draft every time." },
-    normal: { label: "Normal",  value: 6,  desc: "Teams stray a couple of slots from ADP." },
-    loose:  { label: "Loose",   value: 20, desc: "Real reaches and real fallers." },
-    chaos:  { label: "Chaos",   value: 45, desc: "ADP is a loose suggestion." },
+  // How deep down the board an AI team will look, in draft slots. A team considers
+  // everyone within `reach` of the best player left and picks among them, weighted
+  // toward the top — so most picks are near-ADP but a real reach happens often
+  // enough to make two mocks feel different. At 0 a draft is fully reproducible.
+  const REACH = {
+    chalky: { label: "Chalky", value: 0,  desc: "Strictly best available — identical every time if you set the strategies by hand." },
+    normal: { label: "Normal", value: 18, desc: "Teams will reach 15–20 spots down the board." },
+    loose:  { label: "Loose",  value: 34, desc: "Frequent reaches; ADP bends a long way." },
+    chaos:  { label: "Chaos",  value: 60, desc: "ADP is a loose suggestion." },
   };
-  const DEFAULT_JITTER = "normal";
+  const DEFAULT_REACH = "normal";
+
+  // ...but elite players are not allowed to just keep sliding. The further past a
+  // player's ADP the draft has already gone, the harder the room corrects — and the
+  // better the player, the harder that correction. This is what stops a first-round
+  // talent from falling to the fourth just because everyone reached elsewhere.
+  function fallPull(adp) {
+    if (adp <= 12) return 12.0;     // true first-rounders: the room pounces immediately
+    if (adp <= 36) return 6.0;      // early-round talent
+    if (adp <= 80) return 1.5;
+    return 0.3;                     // late-round guys are supposed to drift
+  }
+
+  // A team left on "Random" gets its strategy rolled when the draft starts. Half the
+  // time the room is a free-for-all (each team independent, 1-in-3 each); the other
+  // half the room has a trend — one strategy, picked at random, that most of the
+  // league is chasing. Anything you set by hand is never overridden.
+  const AUTO_STRATEGY = "random";
+  const TREND_ROOM_CHANCE = 0.5;
+  const TREND_SHARE = 0.7;        // odds an auto team follows the room's trend
 
   const STRATEGIES = {
     "2-RB":     { label: "2-RB (robust RB)",  desc: "Two RBs in the first few rounds, then best available." },
@@ -35,7 +55,7 @@
   };
 
   const CONFIG = { STARTER_SLOTS, FLEX_POS, BENCH, STARTERS, ROUNDS, POS_CAPS,
-                   ROSTER_MAX, STRATEGIES, JITTER, DEFAULT_JITTER,
+                   ROSTER_MAX, STRATEGIES, REACH, DEFAULT_REACH, AUTO_STRATEGY,
                    scoring: "0.5 PPR", numTeams: 10 };
 
   // ---- Roster helpers ------------------------------------------------------
@@ -104,7 +124,7 @@
 
   // ---- AI pick selection ---------------------------------------------------
   // Lower "score" = drafted sooner. Base is ADP; strategy + needs + gating nudge it.
-  function aiChoose(team, available, round, rng, jitter) {
+  function aiChoose(team, available, round, rng, reach, overall) {
     const roster = team.roster;
     const strat = team.strategy;
     const rbCount = roster.posCount.RB;
@@ -117,14 +137,15 @@
     if (needK && picksLeftForTeam <= (needDST ? 2 : 1)) mustFillSpecial.push("K");
     if (needDST && picksLeftForTeam <= (needK ? 2 : 1)) mustFillSpecial.push("DST");
 
-    let best = null, bestScore = Infinity;
+    let forced = null, forcedScore = Infinity;
+    const scored = [];
     for (const p of available) {
       if (!canRoster(roster, p.pos)) continue;
 
       if (mustFillSpecial.length) {
         if (!mustFillSpecial.includes(p.pos)) continue;   // only K/DST now
         const s = p.adp;                                   // best available K/DST
-        if (s < bestScore) { best = p; bestScore = s; }
+        if (s < forcedScore) { forced = p; forcedScore = s; }
         continue;
       }
 
@@ -154,11 +175,63 @@
       if (slot && slot !== "BENCH") score -= 8;
       if (slot === "BENCH") score += 6;
 
-      score += (rng() - 0.5) * jitter;   // the only thing that makes two mocks differ
+      // Value pull: the further this player has already slid past their ADP, the
+      // more the room wants them. Keeps elite talent from free-falling (see fallPull).
+      const fallen = overall - p.adp;
+      if (fallen > 0) score -= fallen * fallPull(p.adp);
 
-      if (score < bestScore) { bestScore = score; best = p; }
+      scored.push({ p, score });
     }
-    return best;
+
+    if (mustFillSpecial.length) return forced;
+    if (!scored.length) return null;
+
+    scored.sort((a, b) => a.score - b.score);
+    if (reach <= 0) return scored[0].p;                    // Chalky: strictly best available
+
+    // Everyone within `reach` of the best is a live candidate, weighted toward the
+    // top — so a deep reach is possible on any pick without being the norm.
+    const best = scored[0].score;
+    const window = [];
+    let total = 0;
+    for (const x of scored) {
+      const d = x.score - best;
+      if (d > reach) break;                                // sorted, so nothing further qualifies
+      const w = Math.pow(1 - d / reach, 1.5);
+      total += w;
+      window.push({ p: x.p, w });
+    }
+    let r = rng() * total;
+    for (const x of window) { r -= x.w; if (r <= 0) return x.p; }
+    return window[window.length - 1].p;
+  }
+
+  // Assign a strategy to every team still set to "Random". Returns a short note
+  // describing the room, for the UI to show once the draft is under way.
+  function rollStrategies(teams, rng) {
+    const keys = Object.keys(STRATEGIES);
+    const auto = teams.filter((t) => !STRATEGIES[t.strategy]);
+    if (!auto.length) return { trend: null, note: "Every strategy set by hand." };
+
+    const trending = rng() < TREND_ROOM_CHANCE;
+    const trend = keys[Math.floor(rng() * keys.length) % keys.length];
+
+    auto.forEach((t) => {
+      if (trending && rng() < TREND_SHARE) { t.strategy = trend; return; }
+      const pool = trending ? keys.filter((k) => k !== trend) : keys;
+      t.strategy = pool[Math.floor(rng() * pool.length) % pool.length];
+    });
+
+    const counts = {};
+    teams.forEach((t) => { counts[t.strategy] = (counts[t.strategy] || 0) + 1; });
+    const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+    return {
+      trend: trending ? trend : null,
+      counts,
+      note: trending
+        ? `${STRATEGIES[trend].label} is the trend this year — ${counts[trend]} of ${teams.length} teams.`
+        : `Mixed room — ${top[1]} of ${teams.length} on ${STRATEGIES[top[0]].label}.`,
+    };
   }
 
   // ---- Draft state machine -------------------------------------------------
@@ -173,11 +246,12 @@
       teams.push({
         idx: i,
         name: t.name || `Team ${i + 1}`,
-        strategy: t.strategy || "2-RB",
+        strategy: t.strategy || AUTO_STRATEGY,
         isUser: !!t.isUser,
         roster: newRoster(),
       });
     }
+    const room = rollStrategies(teams, rng);
 
     const order = buildOrder(numTeams, CONFIG.ROUNDS);
     const drafted = new Set();     // player names off the board
@@ -204,9 +278,9 @@
     });
 
     const state = {
-      config: CONFIG, teams, order, picks, missingKeepers, keeperByPick,
+      config: CONFIG, teams, order, picks, missingKeepers, keeperByPick, room,
       // Live: changing this mid-draft applies from the next pick onward.
-      jitter: opts.jitter == null ? JITTER[DEFAULT_JITTER].value : opts.jitter,
+      reach: opts.reach == null ? REACH[DEFAULT_REACH].value : opts.reach,
       cursor: 0,                   // index into order
       available() { return players.filter((p) => !drafted.has(p.name)); },
       isComplete() { return this.cursor >= order.length; },
@@ -250,7 +324,7 @@
       if (keeper) { record(keeper, true); return picks[picks.length - 1]; }
       const team = teams[o.teamIdx];
       if (team.isUser) return null;                // wait for the human
-      const choice = aiChoose(team, state.available(), o.round, rng, state.jitter);
+      const choice = aiChoose(team, state.available(), o.round, rng, state.reach, o.overall);
       if (choice) record(choice, false);
       else state.cursor++;                         // safety: nothing draftable
       return picks[picks.length - 1] || null;
@@ -260,7 +334,8 @@
     state.autoPickUser = function () {
       const team = state.currentTeam();
       if (!team || !team.isUser) return null;
-      const choice = aiChoose(team, state.available(), order[state.cursor].round, rng, state.jitter);
+      const choice = aiChoose(team, state.available(), order[state.cursor].round, rng,
+                              state.reach, order[state.cursor].overall);
       if (choice) { record(choice, false); return picks[picks.length - 1]; }
       return null;
     };

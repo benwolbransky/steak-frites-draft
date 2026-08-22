@@ -14,7 +14,7 @@
   const setup = {
     teams: Array.from({ length: CONFIG.numTeams }, (_, i) => ({
       name: (LC.teams && LC.teams[i]) || `Team ${i + 1}`,
-      strategy: stratKeys[i % stratKeys.length],
+      strategy: CONFIG.AUTO_STRATEGY,        // rolled at draft time unless you set one
       isUser: false,
     })),
     keepers: (LC.keepers || []).map((k) => ({ name: k.name, teamIdx: k.teamIdx, round: k.round })),
@@ -39,41 +39,41 @@
   // ---- randomness dial ----------------------------------------------------
   // How far AI teams stray from ADP. It's the only source of variation between
   // mocks, so "Chalky" (0) also makes a draft perfectly reproducible.
-  const JITTER_KEY = "steak-frites:jitter";
+  const REACH_KEY = "steak-frites:reach";
 
   // One setting, two pickers: on setup (choose before you start) and on the clock bar
-  // (change it live, mid-draft). Both read and write jitterKey.
-  let jitterKey = CONFIG.DEFAULT_JITTER;
+  // (change it live, mid-draft). Both read and write reachKey.
+  let reachKey = CONFIG.DEFAULT_REACH;
 
-  function initJitter() {
+  function initReach() {
     try {
-      const saved = localStorage.getItem(JITTER_KEY);
-      if (CONFIG.JITTER[saved]) jitterKey = saved;
+      const saved = localStorage.getItem(REACH_KEY);
+      if (CONFIG.REACH[saved]) reachKey = saved;
     } catch (e) { /* private mode */ }
 
-    ["jitter-setup", "jitter"].forEach((id) => {
+    ["reach-setup", "reach"].forEach((id) => {
       const sel = $(id);
-      Object.entries(CONFIG.JITTER).forEach(([key, j]) => {
+      Object.entries(CONFIG.REACH).forEach(([key, j]) => {
         const o = el("option", null, j.label);
         o.value = key; o.title = j.desc;
         sel.appendChild(o);
       });
-      sel.onchange = () => setJitter(sel.value);
+      sel.onchange = () => setReach(sel.value);
     });
-    setJitter(jitterKey);
+    setReach(reachKey);
   }
 
-  function setJitter(key) {
-    if (!CONFIG.JITTER[key]) return;
-    jitterKey = key;
-    try { localStorage.setItem(JITTER_KEY, key); } catch (e) { /* private mode */ }
-    $("jitter-setup").value = key;
-    $("jitter").value = key;
-    $("jitter-desc").textContent = CONFIG.JITTER[key].desc;
-    if (draft) draft.jitter = jitterValue();       // takes effect on the next pick
+  function setReach(key) {
+    if (!CONFIG.REACH[key]) return;
+    reachKey = key;
+    try { localStorage.setItem(REACH_KEY, key); } catch (e) { /* private mode */ }
+    $("reach-setup").value = key;
+    $("reach").value = key;
+    $("reach-desc").textContent = CONFIG.REACH[key].desc;
+    if (draft) draft.reach = reachValue();       // takes effect on the next pick
   }
 
-  function jitterValue() { return CONFIG.JITTER[jitterKey].value; }
+  function reachValue() { return CONFIG.REACH[reachKey].value; }
 
   function initTabs() {
     document.querySelectorAll("#tabbar .tab").forEach((b) => { b.onclick = () => setTab(b.dataset.tab); });
@@ -209,13 +209,19 @@
       const name = el("input"); name.type = "text"; name.value = t.name;
       name.oninput = () => (t.name = name.value || `Team ${i + 1}`);
       const sel = el("select");
+      const rand = el("option", null, "Random");
+      rand.value = CONFIG.AUTO_STRATEGY;
+      if (t.strategy === CONFIG.AUTO_STRATEGY) rand.selected = true;
+      sel.appendChild(rand);
       stratKeys.forEach((k) => { const o = el("option", null, STRATEGIES[k].label); o.value = k; if (k === t.strategy) o.selected = true; sel.appendChild(o); });
       sel.onchange = () => { t.strategy = sel.value; renderSetup(); };
       const you = el("label", "you-radio");
       you.innerHTML = `<input type="radio" name="youteam" ${t.isUser ? "checked" : ""}/> you`;
       you.querySelector("input").onchange = () => { setup.teams.forEach((x, j) => (x.isUser = j === i)); };
       row.append(name, sel, you);
-      const desc = el("div", "strat-desc", STRATEGIES[t.strategy].desc);
+      const desc = el("div", "strat-desc", STRATEGIES[t.strategy]
+        ? STRATEGIES[t.strategy].desc
+        : "Rolled when the draft starts — sometimes the room follows a trend.");
       rows.append(row, desc);
     });
     // keeper team dropdown
@@ -262,7 +268,7 @@
   // ================= DRAFT =================
   function startDraft() {
     draft = createDraft({ players: BOARD.ordered(), teams: setup.teams, keepers: setup.keepers,
-                          jitter: jitterValue(), seed: (Math.random() * 1e9) | 0 });
+                          reach: reachValue(), seed: (Math.random() * 1e9) | 0 });
     running = true; userAuto = false;
     $("setup").classList.add("hidden");
     $("results").classList.add("hidden");
@@ -312,7 +318,7 @@
     $("player-search").oninput = (e) => { searchStr = e.target.value.toLowerCase(); renderPlayers(); };
   }
 
-  function render() { renderClock(); renderPlayers(); renderRoster(); renderLog(); }
+  function render() { renderClock(); renderPlayers(); renderRoster(); renderLog(); renderRoom(); }
 
   function renderClock() {
     const o = draft.currentPickInfo();
@@ -372,6 +378,12 @@
     });
   }
 
+  function renderRoom() {
+    const note = draft && draft.room ? draft.room.note : "";
+    $("room-note").textContent = note;
+    $("room-note-results").textContent = note;
+  }
+
   function renderLog() {
     const box = $("pick-log"); box.innerHTML = "";
     draft.picks.slice().reverse().forEach((pk) => {
@@ -405,7 +417,7 @@
   // ================= wire up =================
   function init() {
     BOARD.init(PLAYERS);
-    renderSetup(); initKeeperSearch(); initTabs(); initSheet(); initJitter(); renderBoardStatus();
+    renderSetup(); initKeeperSearch(); initTabs(); initSheet(); initReach(); renderBoardStatus();
     $("edit-board").onclick = showRankings;
     $("rank-done").onclick = hideRankings;
     $("rank-reset").onclick = () => {

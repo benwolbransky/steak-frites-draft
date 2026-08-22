@@ -115,9 +115,11 @@ input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1
 .b-QB { background: var(--qb); } .b-RB { background: var(--rb); } .b-WR { background: var(--wr); }
 .b-TE { background: var(--te); } .b-K { background: var(--k); } .b-DST { background: var(--dst); }
 
-.jitter-row { display: flex; align-items: baseline; gap: .6rem; flex-wrap: wrap; margin: -.3rem 0 .9rem; }
-.jitter-row label { font-size: .82rem; color: var(--muted); display: inline-flex; align-items: center; gap: .4rem; }
-.jitter-row .hint { margin: 0; font-size: .78rem; }
+.room-note { color: var(--muted); font-size: .78rem; margin: -.3rem 0 .6rem; }
+
+.reach-row { display: flex; align-items: baseline; gap: .6rem; flex-wrap: wrap; margin: -.3rem 0 .9rem; }
+.reach-row label { font-size: .82rem; color: var(--muted); display: inline-flex; align-items: center; gap: .4rem; }
+.reach-row .hint { margin: 0; font-size: .78rem; }
 
 /* ---- your board (custom rankings) ---- */
 .board-summary { display: flex; justify-content: space-between; align-items: center; gap: .8rem; flex-wrap: wrap; }
