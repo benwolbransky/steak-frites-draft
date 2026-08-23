@@ -19,7 +19,7 @@ window.LEAGUE_CONFIG = {
     { name: "Chris Olave", teamIdx: 0, round: 7 },
     // Coop  (two at 16 — the second bumps to the nearest free round)
     { name: "Luther Burden III", teamIdx: 1, round: 16 },
-    { name: "Christian Watson", teamIdx: 1, round: 16 },
+    { name: "Harold Fannin Jr.", teamIdx: 1, round: 16},
     // Katz
     { name: "Tetairoa McMillan", teamIdx: 2, round: 5 },
     { name: "Javonte Williams", teamIdx: 2, round: 9 },
@@ -34,7 +34,7 @@ window.LEAGUE_CONFIG = {
     { name: "Drake Maye", teamIdx: 5, round: 16 },
     // Stefan
     { name: "Cam Skattebo", teamIdx: 6, round: 11 },
-    { name: "Rico Dowdle", teamIdx: 6, round: 16 },
+    { name: "Breece Hall", teamIdx: 6, round: 5},
     // fishtoots
     { name: "Travis Etienne Jr.", teamIdx: 7, round: 9 },
     { name: "Kenny Gainwell", teamIdx: 7, round: 16 },
