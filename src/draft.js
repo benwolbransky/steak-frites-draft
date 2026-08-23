@@ -23,9 +23,9 @@
   // enough to make two mocks feel different. At 0 a draft is fully reproducible.
   const REACH = {
     chalky: { label: "Chalky", value: 0,  desc: "Strictly best available — identical every time if you set the strategies by hand." },
-    normal: { label: "Normal", value: 18, desc: "Teams will reach 15–20 spots down the board." },
-    loose:  { label: "Loose",  value: 34, desc: "Frequent reaches; ADP bends a long way." },
-    chaos:  { label: "Chaos",  value: 60, desc: "ADP is a loose suggestion." },
+    normal: { label: "Normal", value: 10, desc: "Teams will reach 15–20 spots down the board." },
+    loose:  { label: "Loose",  value: 20, desc: "Frequent reaches; ADP bends a long way." },
+    chaos:  { label: "Chaos",  value: 30, desc: "ADP is a loose suggestion." },
   };
   const DEFAULT_REACH = "normal";
 
