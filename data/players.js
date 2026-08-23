@@ -20,7 +20,7 @@ window.PLAYERS = [
   { name: "Justin Jefferson", pos: "WR", team: "MIN", adp: 12.2 },
   { name: "James Cook III", pos: "RB", team: "BUF", adp: 12.7 },
   { name: "Saquon Barkley", pos: "RB", team: "PHI", adp: 16.1 },
-  { name: "Ashton Jeanty", pos: "RB", team: "LV", adp: 16.5 },
+  { name: "Ashton Jeanty", pos: "RB", team: "LV", adp: 30.5 },
   { name: "Drake London", pos: "WR", team: "ATL", adp: 18.7 },
   { name: "Derrick Henry", pos: "RB", team: "BAL", adp: 19.4 },
   { name: "Trey McBride", pos: "TE", team: "ARI", adp: 20.1 },
