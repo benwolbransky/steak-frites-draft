@@ -310,7 +310,7 @@
   // ---- render pieces ----
   function buildPosFilters() {
     const box = $("pos-filters"); box.innerHTML = "";
-    ["ALL", ...POS].forEach((p) => {
+    ["ALL", "FLEX", ...POS].forEach((p) => {
       const b = el("button", p === filterPos ? "active" : "", p);
       b.onclick = () => { filterPos = p; buildPosFilters(); renderPlayers(); };
       box.appendChild(b);
@@ -340,7 +340,8 @@
     const yours = draft.currentTeam();
     const canDraftNow = draft.isUserOnClock() && !userAuto;
     let avail = draft.available();
-    if (filterPos !== "ALL") avail = avail.filter((p) => p.pos === filterPos);
+    if (filterPos === "FLEX") avail = avail.filter((p) => CONFIG.FLEX_POS.includes(p.pos));
+    else if (filterPos !== "ALL") avail = avail.filter((p) => p.pos === filterPos);
     if (searchStr) avail = avail.filter((p) => p.name.toLowerCase().includes(searchStr));
     avail.sort((a, b) => BOARD.rankOf(a.name) - BOARD.rankOf(b.name));
     avail.slice(0, 200).forEach((p) => {
