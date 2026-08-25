@@ -27,8 +27,8 @@ window.LEAGUE_CONFIG = {
     { name: "DeVonta Smith", teamIdx: 3, round: 6 },
     { name: "Kyle Pitts Sr.", teamIdx: 3, round: 15 },
     // Jules
-    { name: "Michael Wilson", teamIdx: 4, round: 16 },
-    { name: "Zay Flowers", teamIdx: 4, round: 5 },
+    { name: "Kyle Monangai", teamIdx: 4, round: 16 },
+    { name: "David Montgomery", teamIdx: 4, round: 7 },
     // Ben W  (you)
     { name: "Bhayshul Tuten", teamIdx: 5, round: 15 },
     { name: "Drake Maye", teamIdx: 5, round: 16 },
@@ -37,7 +37,7 @@ window.LEAGUE_CONFIG = {
     { name: "Breece Hall", teamIdx: 6, round: 5},
     // fishtoots
     { name: "Travis Etienne Jr.", teamIdx: 7, round: 9 },
-    { name: "Kenny Gainwell", teamIdx: 7, round: 16 },
+    { name: "Trevor Lawrence", teamIdx: 7, round: 16 },
     // Vader
     { name: "Emeka Egbuka", teamIdx: 8, round: 8 },
     { name: "Colston Loveland", teamIdx: 8, round: 14 },
