@@ -66,6 +66,10 @@
       flexFilled: 0,
       benchFilled: 0,
       posCount: { QB: 0, RB: 0, WR: 0, TE: 0, K: 0, DST: 0 },
+      // Keepers fill a roster but they are not *decisions*. Strategy keys off these
+      // live-pick counters so inheriting two RBs doesn't pre-satisfy robust-RB.
+      posLive: { QB: 0, RB: 0, WR: 0, TE: 0, K: 0, DST: 0 },
+      liveCount: 0,
     };
   }
 
@@ -83,9 +87,10 @@
     return slotFor(roster, pos) !== null;
   }
 
-  function addToRoster(roster, player) {
+  function addToRoster(roster, player, isKeeper) {
     const slot = slotFor(roster, player.pos);
     if (!slot) return false;
+    if (!isKeeper) { roster.posLive[player.pos]++; roster.liveCount++; }
     if (slot === "FLEX") roster.flexFilled++;
     else if (slot === "BENCH") roster.benchFilled++;
     else roster.startersFilled[slot]++;
@@ -127,7 +132,8 @@
   function aiChoose(team, available, round, rng, reach, overall) {
     const roster = team.roster;
     const strat = team.strategy;
-    const rbCount = roster.posCount.RB;
+    const rbCount = roster.posLive.RB;      // kept RBs don't count as strategy picks
+    const myPick = roster.liveCount + 1;    // this team's Nth live pick (keepers skipped)
     const picksLeftForTeam = ROUNDS - roster.players.length;
     const needK = roster.startersFilled.K < 1;
     const needDST = roster.startersFilled.DST < 1;
@@ -160,14 +166,14 @@
       // Strategy: RB timing is the whole personality.
       if (p.pos === "RB") {
         if (strat === "2-RB") {
-          if (rbCount < 2 && round <= 5) score -= 28;      // grab RB2 early
+          if (rbCount < 2 && myPick <= 5) score -= 28;      // grab RB2 early
         } else if (strat === "hero-RB") {
-          if (rbCount === 0 && round === 1) score -= 45;   // the anchor
-          else if (rbCount >= 1 && round >= 2 && round <= 4) score += 55; // steer to WR
-          else if (rbCount < 2 && round >= 5) score -= 18; // circle back
+          if (rbCount === 0 && myPick === 1) score -= 45;   // the anchor
+          else if (rbCount >= 1 && myPick >= 2 && myPick <= 4) score += 55; // steer to WR
+          else if (rbCount < 2 && myPick >= 5) score -= 18; // circle back
         } else if (strat === "zero-RB") {
-          if (round <= 4) score += 90;                     // avoid RB early
-          else if (rbCount < 3 && round >= 5) score -= 22; // then hammer RB
+          if (myPick <= 4) score += 90;                     // avoid RB early
+          else if (rbCount < 3 && myPick >= 5) score -= 22; // then hammer RB
         }
       }
       // Everyone: nudge toward filling an actual starting slot.
@@ -272,7 +278,7 @@
       let slot = free.find((o) => o.round === k.round);
       if (!slot) slot = free.slice().sort((a, b) =>
         Math.abs(a.round - k.round) - Math.abs(b.round - k.round) || a.round - b.round)[0];
-      if (!addToRoster(team.roster, pl)) return;
+      if (!addToRoster(team.roster, pl, true)) return;
       drafted.add(pl.name);
       keeperByPick[slot.overall] = pl;
     });
