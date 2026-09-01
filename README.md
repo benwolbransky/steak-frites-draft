@@ -197,6 +197,21 @@ is just the starting point. Edit that file to change the defaults permanently (s
 comments in it for the format); delete it and the app falls back to generic Team 1–10.
 Draft *strategies* aren't set there — pick them per team on the setup screen.
 
+## Build stamp
+
+The header shows `build <hash> · <date>` so you can tell whether the page you're playing
+has your latest changes. The hash is a short digest of the app's own source files, so it
+changes when they do and stays put when they don't; the date is when that build was
+committed. During a draft on a phone it's hidden to save a row.
+
+`data/version.js` is generated — the **pre-commit hook** refreshes it and stages it, so it
+can't go stale. If you clone fresh, reinstall the hook:
+
+```bash
+cp scripts/hooks/pre-commit .git/hooks/ && chmod +x .git/hooks/pre-commit
+node scripts/stamp-version.mjs      # or stamp by hand any time
+```
+
 ## Updating ADP
 
 `data/players.js` is generated from **live ESPN ADP**. Refresh it anytime (needs Node 18+):
@@ -225,6 +240,8 @@ src/rankings.js        your custom board: reorders players and rewrites effectiv
 src/styles.css         theme + layout
 src/app.js             UI controller: setup, draft loop, results
 scripts/fetch-adp.mjs  refresh data/players.js from live ESPN ADP  (node scripts/fetch-adp.mjs)
+data/version.js        generated build stamp (pre-commit hook) — shown in the header
+scripts/stamp-version.mjs  writes data/version.js
 scripts/make-icons.py  regenerate icons/                        (python3 scripts/make-icons.py)
 ```
 

@@ -416,7 +416,19 @@
   }
 
   // ================= wire up =================
+  // Build stamp: tells you whether the page you're on includes your latest changes.
+  function renderBuild() {
+    const b = window.BUILD;
+    const box = $("build-stamp");
+    if (!b) { box.textContent = "dev build (unstamped)"; return; }
+    const d = new Date(b.at);
+    box.textContent = `build ${b.hash} · ${d.toLocaleString([], {
+      month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}`;
+    box.title = `Source hash ${b.hash}, committed ${d.toString()}`;
+  }
+
   function init() {
+    renderBuild();
     BOARD.init(PLAYERS);
     renderSetup(); initKeeperSearch(); initTabs(); initSheet(); initReach(); renderBoardStatus();
     $("edit-board").onclick = showRankings;

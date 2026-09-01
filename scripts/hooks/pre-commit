@@ -1,0 +1,5 @@
+#!/bin/sh
+# Refresh the build stamp shown in the app header, and include it in this commit.
+# Regenerate by hand any time with: node scripts/stamp-version.mjs
+node scripts/stamp-version.mjs >/dev/null 2>&1 && git add data/version.js
+exit 0
